@@ -1,0 +1,16 @@
+# runtime
+data/
+.refs/
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+.env
+*.db
+.DS_Store
+Thumbs.db
