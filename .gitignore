@@ -4,6 +4,7 @@ data/
 node_modules/
 __pycache__/
 *.pyc
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
 .venv/
