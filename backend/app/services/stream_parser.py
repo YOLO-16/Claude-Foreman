@@ -27,6 +27,8 @@ class StreamParser:
         self.result_text = ""
         self.is_error = False
         self.plain_mode = False
+        self._rate_limit_emitted = False
+        self.rate_limit_signal: dict | None = None
 
     def feed(self, line: str) -> list[StreamEvent]:
         line = line.rstrip("\n\r")
@@ -47,6 +49,7 @@ class StreamParser:
     def _plain(self, line: str) -> list[StreamEvent]:
         events = [StreamEvent("log", "stdout", _truncate(line))]
         events.extend(self._scan_decision(line, "text_marker"))
+        events.extend(self._scan_rate_limit(line))
         return events
 
     def _handle(self, data: dict, raw: str) -> list[StreamEvent]:
@@ -70,6 +73,7 @@ class StreamParser:
         if isinstance(content, str):
             events.append(StreamEvent("log", "stdout", _truncate(content)))
             events.extend(self._scan_decision(content))
+            events.extend(self._scan_rate_limit(content))
             return events
         if not isinstance(content, list):
             return events
@@ -81,6 +85,7 @@ class StreamParser:
                 text = block.get("text", "")
                 events.append(StreamEvent("log", "stdout", _truncate(text)))
                 events.extend(self._scan_decision(text))
+                events.extend(self._scan_rate_limit(text))
             elif btype == "tool_use":
                 self.tool_call_count += 1
                 name = block.get("name", "?")
@@ -136,6 +141,7 @@ class StreamParser:
         )
         events = [StreamEvent("log", "result", summary)]
         events.extend(self._scan_decision(self.result_text))
+        events.extend(self._scan_rate_limit(self.result_text))
         return events
 
     def _scan_decision(self, text: str, kind: str = "text_marker") -> list[StreamEvent]:
@@ -150,6 +156,23 @@ class StreamParser:
                     )
                 ]
         return []
+
+    def _scan_rate_limit(self, text: str) -> list[StreamEvent]:
+        if self._rate_limit_emitted:
+            return []
+        limit = detect_rate_limit(text)
+        if not limit:
+            return []
+        self._rate_limit_emitted = True
+        self.rate_limit_signal = {"pattern": limit["pattern"], "reset_at": limit["reset_at"]}
+        return [
+            StreamEvent(
+                "rate_limit",
+                "rate_limit",
+                _truncate(limit["raw"]),
+                {"pattern": limit["pattern"], "reset_at": limit["reset_at"]},
+            )
+        ]
 
 
 RATE_LIMIT_PATTERNS = [

@@ -1,6 +1,9 @@
 """Test double for Claude Code CLI. Emits stream-json lines.
 
 Prompt containing FAIL -> exit 1. Prompt containing ASK -> emits AskUserQuestion.
+Flags:
+  --quota-after N          emit rate limit marker after N assistant messages
+  --quota-resets-in SECS   include "resets in N seconds" hint (default 60)
 """
 
 import json
@@ -14,6 +17,8 @@ def main() -> int:
     prompt = ""
     session_id = str(uuid.uuid4())
     resume = None
+    quota_after = None
+    quota_resets_in = 60
     i = 0
     while i < len(args):
         a = args[i]
@@ -26,6 +31,12 @@ def main() -> int:
             i += 1
         elif a == "--resume" and i + 1 < len(args):
             resume = args[i + 1]
+            i += 1
+        elif a == "--quota-after" and i + 1 < len(args):
+            quota_after = int(args[i + 1])
+            i += 1
+        elif a == "--quota-resets-in" and i + 1 < len(args):
+            quota_resets_in = int(args[i + 1])
             i += 1
         i += 1
 
@@ -74,6 +85,37 @@ def main() -> int:
                 "session_id": session_id,
                 "num_turns": 1,
                 "total_cost_usd": 0.01,
+            }
+        )
+        return 0
+
+    if quota_after is not None:
+        for n in range(quota_after):
+            emit(
+                {
+                    "type": "assistant",
+                    "message": {
+                        "role": "assistant",
+                        "content": [{"type": "text", "text": f"step {n + 1}: working"}],
+                    },
+                }
+            )
+            time.sleep(0.01)
+        emit(
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                f"usage limit reached. try again in {quota_resets_in} seconds. "
+                                "your limit will reset at the next window."
+                            ),
+                        }
+                    ],
+                },
             }
         )
         return 0
@@ -136,3 +178,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

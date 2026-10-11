@@ -13,6 +13,7 @@ from ..db import engine
 from ..models import ExecutionLog, Task, TaskMode, TaskStatus
 from ..state import ensure_transition
 from .events import bus
+from .quota_gate import gate
 from .reporter import write_report
 from .stream_parser import StreamParser, detect_rate_limit
 
@@ -142,9 +143,29 @@ async def run_task(task_id: int) -> None:
         _finish(task_id, TaskStatus.failed, error=f"timeout after {timeout}s")
         return
 
+    if parser.rate_limit_signal:
+        await _kill(proc)
+        await proc.wait()
+        sig = parser.rate_limit_signal
+        await gate.block(
+            sig.get("reset_at"),
+            sig["pattern"],
+            sig.get("raw", ""),
+        )
+        _publish_quota(sig)
+        reset_at = sig.get("reset_at")
+        _finish(
+            task_id,
+            TaskStatus.failed,
+            error=f"rate limited: {sig['pattern']}; resets_at={reset_at}",
+        )
+        return
+
     rc = await proc.wait()
     limit = detect_rate_limit(parser.result_text)
     if limit:
+        await gate.block(limit.get("reset_at"), limit["pattern"], limit["raw"])
+        _publish_quota(limit)
         _finish(task_id, TaskStatus.failed, error=f"rate limited: {limit['pattern']}")
         return
     if rc == 0 and not parser.is_error:
@@ -159,6 +180,8 @@ async def _pump(task_id: int, proc: asyncio.subprocess.Process, parser: StreamPa
         line = raw.decode("utf-8", errors="replace")
         for ev in parser.feed(line):
             _log(task_id, ev.log_type, ev.content)
+        if parser.rate_limit_signal:
+            return
     async for raw in proc.stderr:
         line = raw.decode("utf-8", errors="replace").rstrip()
         if line:
@@ -174,6 +197,21 @@ async def _kill(proc: asyncio.subprocess.Process) -> None:
             proc.kill()
         except ProcessLookupError:
             pass
+
+
+def _publish_quota(signal: dict) -> None:
+    status = gate.status()
+    bus.publish(
+        0,
+        {
+            "type": "quota",
+            "blocked": status["blocked"],
+            "reset_at": status["reset_at"],
+            "remaining_sec": status["remaining_sec"],
+            "pattern": signal.get("pattern"),
+            "ts": datetime.now(UTC).isoformat(),
+        },
+    )
 
 
 def _finish(

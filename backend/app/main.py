@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import decisions, queue, reports, tasks, ws
+from .api import decisions, queue, quota, reports, tasks, ws
 from .db import init_db
 
 
@@ -26,6 +26,7 @@ app.include_router(tasks.router)
 app.include_router(queue.router)
 app.include_router(reports.router)
 app.include_router(decisions.router)
+app.include_router(quota.router)
 app.include_router(ws.router)
 
 

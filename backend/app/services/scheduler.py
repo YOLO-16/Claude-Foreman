@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from ..db import engine
 from ..models import Task, TaskStatus
 from .executor import run_task
+from .quota_gate import gate
 
 _active = False
 _worker: asyncio.Task | None = None
@@ -32,6 +33,11 @@ def stop_queue() -> None:
 
 async def _loop() -> None:
     while _active:
+        if gate.is_blocked():
+            logger.info("scheduler paused: quota blocked remaining={:.1f}s", gate.remaining())
+            await gate.wait()
+            logger.info("scheduler resumed after quota unblock")
+            continue
         task_id = _next_pending()
         if task_id is None:
             await asyncio.sleep(1.0)
