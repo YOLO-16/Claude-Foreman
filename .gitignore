@@ -15,3 +15,5 @@ build/
 *.db
 .DS_Store
 Thumbs.db
+*.tsbuildinfo
+.claude/

@@ -1,0 +1,55 @@
+# Third-Party Licenses
+
+Claude Foreman 的设计与实现参考了以下开源项目。复用的代码保留原版权头。
+
+## MIT License
+
+### hoangsonww/Claude-Code-Agent-Monitor
+Copyright (c) 2026 - Now, Son Nguyen
+用途：前端 WebSocket 监控架构参考
+https://github.com/hoangsonww/Claude-Code-Agent-Monitor
+
+### dnvriend/claude-code-scheduler
+用途：Python executor spawn/stream-json 解析参考
+https://github.com/dnvriend/claude-code-scheduler
+
+### vasiliyk/claude-queue
+用途：额度检测、优先级队列设计参考
+https://github.com/vasiliyk/claude-queue
+
+### hseinmoussa/claude-autopilot
+用途：分层限流检测、重置时间解析设计参考
+https://github.com/hseinmoussa/claude-autopilot
+
+### jakemor/kanna
+Copyright (c) Jake Mor
+用途：WS 客户端、报告分节、终端面板设计参考
+https://github.com/jakemor/kanna
+
+### sugyan/claude-code-webui
+用途：stream-json → UI 消息解析管线参考
+https://github.com/sugyan/claude-code-webui
+
+### hex/claude-sessions
+用途：transcript 用量统计、会话隔离设计参考
+https://github.com/hex/claude-sessions
+
+### cmAIdx/headless-claude-automation-template
+用途：Headless 权限门分层设计参考
+https://github.com/cmAIdx/headless-claude-automation-template
+
+### kbwo/ccmanager
+用途：多会话恢复模型参考
+https://github.com/kbwo/ccmanager
+
+### wxkingstar/clawrelay-wecom-server
+用途：决策挂起/恢复状态机设计参考
+https://github.com/wxkingstar/clawrelay-wecom-server
+
+## 仅阅读借鉴（未拷贝代码）
+
+### siteboon/claudecodeui — AGPL-3.0
+任务板/WS context 设计参考。因 AGPL 传染性，未复制任何源文件。
+
+### JCSnap/claude-code-queue — 无 LICENSE 文件
+限流检测与队列状态机思路参考。未整文件拷贝。
