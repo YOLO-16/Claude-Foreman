@@ -52,6 +52,18 @@ export interface ReportSummary {
   tool_call_count: number;
 }
 
+export interface QuotaStatus {
+  blocked: boolean;
+  reset_at: number | null;
+  remaining_sec: number;
+  last_signal: {
+    pattern: string;
+    reset_at: number | null;
+    raw: string;
+    ts: number;
+  } | null;
+}
+
 export interface WsMessage {
   type: string;
   task_id?: number;
@@ -61,5 +73,9 @@ export interface WsMessage {
   decision_id?: string;
   question?: string;
   kind?: string;
+  blocked?: boolean;
+  reset_at?: number | null;
+  remaining_sec?: number;
+  pattern?: string | null;
   ts?: string;
 }

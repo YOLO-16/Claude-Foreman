@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Decision, Task } from '../api/types';
 import { DecisionModal } from '../components/DecisionModal';
 import { LogTerminal } from '../components/LogTerminal';
+import { QuotaBadge } from '../components/QuotaBadge';
 import { useTaskSocket } from '../hooks/useTaskSocket';
 
 export function MonitorPage() {
@@ -12,7 +13,7 @@ export function MonitorPage() {
   const [taskId, setTaskId] = useState<number | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const { messages, connected } = useTaskSocket(taskId);
+  const { messages, connected, quota } = useTaskSocket(taskId);
 
   const loadTasks = async () => {
     try {
@@ -81,6 +82,7 @@ export function MonitorPage() {
             )}
           </>
         )}
+        <QuotaBadge status={quota} onChanged={loadTasks} />
       </Space>
       <div style={{ flex: 1, minHeight: 0 }}>
         <LogTerminal messages={messages} />

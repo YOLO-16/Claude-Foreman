@@ -6,5 +6,7 @@ describe('api client', () => {
     expect(typeof api.listTasks).toBe('function');
     expect(typeof api.createTask).toBe('function');
     expect(typeof api.respondDecision).toBe('function');
+    expect(typeof api.quotaStatus).toBe('function');
+    expect(typeof api.quotaUnblock).toBe('function');
   });
 });

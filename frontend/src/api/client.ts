@@ -1,4 +1,4 @@
-import type { LogLine, ReportSummary, Task, TaskMode } from './types';
+import type { LogLine, QuotaStatus, ReportSummary, Task, TaskMode } from './types';
 
 const BASE = '/api';
 
@@ -47,4 +47,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ answer, action }),
     }),
+  quotaStatus: () => req<QuotaStatus>('/quota'),
+  quotaUnblock: () => req<QuotaStatus>('/quota/unblock', { method: 'POST' }),
 };

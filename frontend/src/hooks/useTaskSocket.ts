@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { WsMessage } from '../api/types';
+import type { QuotaStatus, WsMessage } from '../api/types';
 
 export function useTaskSocket(taskId: number | null) {
   const [messages, setMessages] = useState<WsMessage[]>([]);
   const [connected, setConnected] = useState(false);
+  const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const retryRef = useRef(0);
 
@@ -20,6 +21,22 @@ export function useTaskSocket(taskId: number | null) {
       try {
         const msg = JSON.parse(e.data) as WsMessage;
         if (msg.type === 'ping') return;
+        if (msg.type === 'quota') {
+          setQuota({
+            blocked: msg.blocked ?? false,
+            reset_at: msg.reset_at ?? null,
+            remaining_sec: msg.remaining_sec ?? 0,
+            last_signal: msg.pattern
+              ? {
+                  pattern: msg.pattern,
+                  reset_at: msg.reset_at ?? null,
+                  raw: msg.content ?? '',
+                  ts: msg.ts ? new Date(msg.ts).getTime() : Date.now(),
+                }
+              : null,
+          });
+          return;
+        }
         setMessages((prev) => [...prev.slice(-500), msg]);
       } catch {
         /* ignore */
@@ -43,5 +60,5 @@ export function useTaskSocket(taskId: number | null) {
     };
   }, [connect]);
 
-  return { messages, connected, clear: () => setMessages([]) };
+  return { messages, connected, quota, clear: () => setMessages([]) };
 }
