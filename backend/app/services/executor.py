@@ -12,6 +12,8 @@ from ..config import settings
 from ..db import engine
 from ..models import ExecutionLog, Task, TaskMode, TaskStatus
 from ..state import ensure_transition
+from .events import bus
+from .reporter import write_report
 from .stream_parser import StreamParser, detect_rate_limit
 
 
@@ -77,15 +79,26 @@ def _write_interactive_settings(task: Task) -> Path:
 
 
 def _log(task_id: int, log_type: str, content: str) -> None:
+    content = content[:8192]
     with Session(engine) as s:
         s.add(
             ExecutionLog(
                 task_id=task_id,
-                log_content=content[:8192],
+                log_content=content,
                 log_type=log_type,
             )
         )
         s.commit()
+    bus.publish(
+        task_id,
+        {
+            "type": "log",
+            "task_id": task_id,
+            "log_type": log_type,
+            "content": content,
+            "ts": datetime.now(UTC).isoformat(),
+        },
+    )
 
 
 async def run_task(task_id: int) -> None:
@@ -188,6 +201,19 @@ def _finish(
         s.commit()
     if parser and parser.result_text:
         _log(task_id, "result", parser.result_text[:8192])
+    try:
+        write_report(task_id)
+    except Exception as e:
+        logger.warning("report write failed for {}: {}", task_id, e)
+    bus.publish(
+        task_id,
+        {
+            "type": "done",
+            "task_id": task_id,
+            "status": status.value if hasattr(status, "value") else str(status),
+            "ts": datetime.now(UTC).isoformat(),
+        },
+    )
 
 
 def _mode(task_id: int) -> TaskMode:
